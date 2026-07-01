@@ -1,105 +1,74 @@
-# 🚀 React JS Projects Portfolio
+# 🚀 React Portfolio Projects
 
-A curated collection of real-world React and Full Stack applications built to strengthen frontend architecture, backend integration, state management, performance optimization, and modern web development practices.
+A curated collection of full-stack and frontend applications focused on solving real-world business challenges using modern web technologies.
 
-## 📂 Projects
+Rather than building generic tutorial applications, these projects are designed around practical industry use cases such as engineering management, enterprise authentication, recruitment operations, and personalized content discovery.
 
-### 📋 TrackFlow – Task & Defect Management Platform
-**Tech Stack:** React, TypeScript, Node.js, Express.js, PostgreSQL, JWT, Zustand, Tailwind CSS
-
-**Highlights**
-- Task & defect management system
-- Kanban board with drag & drop
-- JWT Authentication & Role-based Access
-- Sprint planning & analytics dashboard
-- REST APIs
-- PostgreSQL database
-- Responsive UI
+Each project emphasizes scalable architecture, reusable components, responsive user experiences, and production-oriented development practices.
 
 ---
 
-### 🎬 Movie App
-**Tech Stack:** React, JavaScript, REST API, CSS
+## Featured Projects
 
-**Highlights**
-- Search movies
-- Trending movies
-- Movie details
-- Responsive interface
-- API integration
+### 📌 TrackFlow
 
----
+**Intelligent Engineering Management Platform**
 
-### 🚖 Uber Clone
-**Tech Stack:** React Native, Expo, TypeScript, Clerk, PostgreSQL, Google Maps API, Stripe
+A modern engineering management platform that streamlines sprint planning, defect tracking, project collaboration, and delivery insights for agile software teams.
 
-**Highlights**
-- Authentication
-- Ride booking workflow
-- Live location tracking
-- Google Maps integration
-- Stripe payment integration
-- Modern mobile UI
+**Tech Stack:** React, Vite, Tailwind CSS, Express, SQLite, Socket.IO, Zustand
 
 ---
 
-### 📊 React Admin Dashboard
-**Tech Stack:** React, TypeScript, Refine, Material UI, REST APIs
+### 🔐 SecureAuth Pro
 
-**Highlights**
-- Dashboard UI
-- CRUD operations
-- Authentication
-- Data tables
-- Charts & analytics
-- Responsive admin interface
+**Enterprise Identity & Security Platform**
+
+A full-stack authentication and identity management platform featuring session management, security monitoring, audit logging, role-based administration, and enterprise-grade account protection.
+
+**Tech Stack:** React, Node.js, Express, MongoDB, JWT
 
 ---
 
-## 🛠️ Technologies
+### 👥 TalentLens
 
-### Frontend
-- React.js
-- Next.js
-- TypeScript
-- JavaScript (ES6+)
-- Tailwind CSS
-- Redux Toolkit
-- Zustand
-- React Query
-- React Hook Form
+**Hiring Operations Platform**
 
-### Backend
-- Node.js
-- Express.js
-- PostgreSQL
-- MongoDB
-- JWT Authentication
-- REST APIs
+A recruitment operations platform that centralizes candidate management, interview workflows, hiring analytics, recruiter collaboration, and recruitment reporting.
 
-### Tools
-- Git
-- GitHub
-- Vite
-- Docker
-- CI/CD
-- Figma
+**Tech Stack:** React, Refine, Material UI, React Query, Node.js
 
 ---
 
-## 🎯 Purpose
+### 🎬 CineWise
 
-This repository showcases projects built for learning, experimentation, and real-world application development, demonstrating modern React and Full Stack development practices.
+**Intelligent Movie Discovery Platform**
 
----
+A personalized movie discovery platform designed to simplify content exploration through advanced filtering, personalized recommendations, curated collections, and watchlist management.
 
-## 👩‍💻 Author
-
-**Jayashree K**
-
-- LinkedIn: https://www.linkedin.com/in/jayashree-k-0a7b861a0/
-- GitHub: https://github.com/jayashre508
+**Tech Stack:** React, Appwrite, TMDB API, Tailwind CSS
 
 ---
 
-⭐ If you found these projects useful, consider giving this repository a star.
+## Technologies
+
+* React.js
+* JavaScript (ES6+)
+* Node.js
+* Express.js
+* MongoDB
+* SQLite
+* Tailwind CSS
+* Material UI
+* React Query
+* Zustand
+* Socket.IO
+* REST APIs
+* Vite
+* Appwrite
+* JWT Authentication
+* Git & GitHub
+
+---
+
+These projects demonstrate practical software engineering principles including scalable architecture, reusable component design, responsive interfaces, authentication, data visualization, state management, and enterprise-focused product development.
