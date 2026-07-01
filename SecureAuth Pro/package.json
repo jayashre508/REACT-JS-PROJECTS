@@ -1,0 +1,10 @@
+{
+  "name": "authentication-system",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
+}
+
