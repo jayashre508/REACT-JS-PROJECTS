@@ -178,6 +178,113 @@ const requireRole = (role) => (req, res, next) => {
 // ── Helper: parse tags ──────────────────────────────────────────
 const parseTask = (t) => t ? { ...t, tags: t.tags ? t.tags.split(",").filter(Boolean) : [], attachments: t.attachments ? t.attachments.split(",").filter(Boolean) : [] } : null;
 
+const getTasks = () => db.prepare("SELECT * FROM tasks").all().map(parseTask);
+const getMembers = () => db.prepare("SELECT * FROM members").all();
+const getSprints = () => db.prepare("SELECT * FROM sprints").all();
+const activeStatuses = new Set(["todo", "in-progress", "review"]);
+const priorityWeight = { low: 1, medium: 2, high: 3, critical: 5 };
+const moduleKeywords = {
+  authentication: ["auth", "login", "password", "session", "token", "rbac", "2fa"],
+  frontend: ["ui", "safari", "mobile", "responsive", "layout", "theme", "dashboard"],
+  backend: ["api", "query", "database", "rate", "endpoint", "server"],
+  devops: ["ci", "cd", "pipeline", "deploy", "github", "build"],
+  notifications: ["email", "notification", "alert"],
+  reporting: ["report", "chart", "analytics", "export"],
+};
+
+const textOf = (task) => `${task.title || ""} ${task.description || ""} ${(task.tags || []).join(" ")}`.toLowerCase();
+const words = (value) => new Set(String(value || "").toLowerCase().replace(/[^a-z0-9\s-]/g, " ").split(/\s+/).filter((w) => w.length > 2));
+const similarity = (a, b) => {
+  const aw = words(a);
+  const bw = words(b);
+  if (!aw.size || !bw.size) return 0;
+  const shared = [...aw].filter((w) => bw.has(w)).length;
+  return Math.round((shared / Math.max(aw.size, bw.size)) * 100);
+};
+const detectModules = (text) => Object.entries(moduleKeywords)
+  .filter(([, keys]) => keys.some((key) => text.includes(key)))
+  .map(([module]) => module);
+const estimatePoints = (task) => {
+  const text = textOf(task);
+  let points = task.storyPoints || 3;
+  if (text.includes("rbac") || text.includes("authentication") || text.includes("pipeline")) points += 5;
+  if (text.includes("api") || text.includes("database") || text.includes("security")) points += 3;
+  if (task.priority === "critical") points += 3;
+  if (task.type === "bug") points -= 1;
+  return Math.max(1, Math.min(13, points));
+};
+const workload = (tasks, members) => members.map((member) => {
+  const assigned = tasks.filter((t) => t.assigneeId === member.id && activeStatuses.has(t.status));
+  const points = assigned.reduce((sum, task) => sum + (task.storyPoints || estimatePoints(task)), 0);
+  return { ...member, activeTasks: assigned.length, activePoints: points, capacity: member.role === "Product Lead" ? 10 : 16 };
+});
+const sprintRisk = (sprintId) => {
+  const tasks = getTasks();
+  const members = getMembers();
+  const sprints = getSprints();
+  const sprint = sprints.find((s) => s.id === sprintId) || sprints.find((s) => s.status === "active") || sprints[0];
+  const sprintTasks = sprint ? tasks.filter((t) => t.sprintId === sprint.id) : [];
+  const totalPoints = sprintTasks.reduce((sum, task) => sum + (task.storyPoints || 0), 0);
+  const donePoints = sprintTasks.filter((t) => t.status === "done").reduce((sum, task) => sum + (task.storyPoints || 0), 0);
+  const blocked = sprintTasks.filter((t) => t.priority === "critical" && t.status !== "done");
+  const teamLoad = workload(sprintTasks, members);
+  const overloaded = teamLoad.filter((m) => m.activePoints > m.capacity);
+  const completion = totalPoints ? Math.round((donePoints / totalPoints) * 100) : 0;
+  const riskPenalty = blocked.length * 12 + overloaded.length * 10 + Math.max(0, totalPoints - (sprint?.storyPoints || totalPoints)) * 2;
+  const confidence = Math.max(10, Math.min(95, completion + 45 - riskPenalty));
+  return {
+    sprint,
+    confidence,
+    healthScore: Math.max(1, Math.round(confidence / 10)),
+    status: confidence >= 75 ? "On track" : confidence >= 50 ? "Watch" : "At risk",
+    blockers: blocked.map((t) => ({ id: t.id, title: t.title, priority: t.priority })),
+    overloaded: overloaded.map((m) => ({ id: m.id, name: m.name, activePoints: m.activePoints, capacity: m.capacity })),
+    redistribution: overloaded.map((m) => {
+      const receiver = teamLoad.filter((x) => x.id !== m.id).sort((a, b) => a.activePoints - b.activePoints)[0];
+      return receiver ? `Move 3-5 points from ${m.name} to ${receiver.name} to reduce delivery risk.` : `Reduce scope for ${m.name}.`;
+    }),
+  };
+};
+const buildInsights = () => {
+  const tasks = getTasks();
+  const members = getMembers();
+  const sprints = getSprints();
+  const activeSprint = sprints.find((s) => s.status === "active") || sprints[0];
+  const risk = sprintRisk(activeSprint?.id);
+  const bugs = tasks.filter((t) => t.type === "bug");
+  const openBugs = bugs.filter((t) => t.status !== "done");
+  const completed = tasks.filter((t) => t.status === "done");
+  const velocity = sprints.map((s) => {
+    const sprintTasks = tasks.filter((t) => t.sprintId === s.id);
+    return {
+      sprint: s.name,
+      committed: s.storyPoints || sprintTasks.reduce((sum, t) => sum + (t.storyPoints || 0), 0),
+      completed: sprintTasks.filter((t) => t.status === "done").reduce((sum, t) => sum + (t.storyPoints || 0), 0),
+    };
+  });
+  const teamLoad = workload(tasks, members);
+  const balanceScore = Math.max(1, 100 - Math.round(Math.max(...teamLoad.map((m) => m.activePoints), 0) * 4));
+  return {
+    sprintHealthScore: risk.healthScore,
+    deliveryConfidence: risk.confidence,
+    workloadBalance: balanceScore,
+    velocityPrediction: Math.round((velocity.reduce((sum, v) => sum + v.completed, 0) / Math.max(velocity.length, 1)) || 0),
+    bugTrend: {
+      open: openBugs.length,
+      resolved: bugs.length - openBugs.length,
+      criticalOpen: openBugs.filter((t) => t.priority === "critical").length,
+    },
+    risk,
+    velocity,
+    workload: teamLoad,
+    criticalRisks: [
+      ...risk.blockers.map((t) => `Critical blocker ${t.id}: ${t.title}`),
+      ...risk.overloaded.map((m) => `${m.name} is over capacity (${m.activePoints}/${m.capacity} pts)`),
+      ...(openBugs.length > completed.length / 2 ? ["Bug inflow is high relative to completed work"] : []),
+    ].slice(0, 5),
+  };
+};
+
 // Helper to emit task updates
 const emitTaskUpdate = (event, task) => {
   io.emit(event, task);
@@ -350,6 +457,145 @@ app.get("/api/notifications", auth, (req, res) => {
 
 
 // ── Socket.io for real-time updates ───────────────────────────
+// AI intelligence routes. These deterministic heuristics make the product useful
+// without external infrastructure and can later be swapped for an LLM provider.
+app.get("/api/ai/insights", auth, (req, res) => {
+  res.json(buildInsights());
+});
+
+app.post("/api/ai/duplicates", auth, (req, res) => {
+  const candidateText = `${req.body.title || ""} ${req.body.description || ""} ${(req.body.tags || []).join(" ")}`;
+  const matches = getTasks()
+    .filter((task) => (req.body.type || "bug") === "bug" ? task.type === "bug" : true)
+    .map((task) => ({ task, score: similarity(candidateText, textOf(task)) }))
+    .filter((item) => item.score >= 25)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+  res.json({
+    duplicateRisk: matches[0]?.score || 0,
+    matches: matches.map(({ task, score }) => ({ id: task.id, title: task.title, status: task.status, score })),
+  });
+});
+
+app.post("/api/ai/bug-assistant", auth, (req, res) => {
+  const text = `${req.body.title || ""} ${req.body.description || ""}`.toLowerCase();
+  const affectedModules = detectModules(text);
+  const severity = text.includes("crash") || text.includes("blank") || text.includes("data loss")
+    ? "critical"
+    : text.includes("slow") || text.includes("timeout") || text.includes("security") ? "high" : "medium";
+  const rootCauses = [
+    text.includes("safari") ? "Browser-specific rendering or storage API incompatibility" : null,
+    text.includes("login") || text.includes("token") ? "Session token refresh, route guard, or auth state race condition" : null,
+    text.includes("duplicate") ? "Idempotency gap in event handling or websocket reconciliation" : null,
+    text.includes("slow") || text.includes("performance") ? "Unbounded query, missing index, or unnecessary client re-render" : null,
+  ].filter(Boolean);
+  res.json({
+    severity,
+    affectedModules: affectedModules.length ? affectedModules : ["frontend", "backend"],
+    likelyRootCauses: rootCauses.length ? rootCauses : ["Recent change near the reported workflow", "Unhandled edge state in async request flow"],
+    debuggingSteps: [
+      "Reproduce with the same browser, role, and dataset reported by the customer.",
+      "Check client console, API status codes, and websocket events for the same timestamp.",
+      "Bisect recent changes touching the affected module and add a regression test before closing.",
+    ],
+    recommendedTags: [...new Set([...(affectedModules || []), severity])].slice(0, 4),
+  });
+});
+
+app.post("/api/ai/task-breakdown", auth, (req, res) => {
+  const base = req.body.title || "New capability";
+  const text = `${base} ${req.body.description || ""}`.toLowerCase();
+  const modules = detectModules(text);
+  res.json({
+    storyPoints: estimatePoints(req.body),
+    subtasks: [
+      { area: "Frontend", title: `Build user workflow for ${base}`, points: 3 },
+      { area: "Backend", title: `Expose API and validation for ${base}`, points: 3 },
+      { area: "Testing", title: `Add regression and acceptance coverage for ${base}`, points: 2 },
+      { area: "DevOps", title: `Prepare rollout and observability for ${base}`, points: modules.includes("devops") ? 3 : 1 },
+      { area: "Documentation", title: "Document behavior, edge cases, and release impact", points: 1 },
+    ],
+    acceptanceCriteria: [
+      "Primary workflow succeeds for the happy path and empty/error states.",
+      "Permissions, validation, and audit-sensitive paths are covered.",
+      "Feature ships with measurable success signal and rollback notes.",
+    ],
+  });
+});
+
+app.post("/api/ai/sprint-plan", auth, (req, res) => {
+  const tasks = getTasks();
+  const members = getMembers();
+  const capacity = members.reduce((sum, member) => sum + (member.role === "Product Lead" ? 6 : 12), 0);
+  const backlog = tasks
+    .filter((t) => t.status === "backlog" || !t.sprintId)
+    .map((t) => ({ ...t, suggestedPoints: estimatePoints(t), modules: detectModules(textOf(t)) }))
+    .sort((a, b) => (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0));
+  let used = 0;
+  const recommended = [];
+  for (const task of backlog) {
+    if (used + task.suggestedPoints <= capacity) {
+      recommended.push(task);
+      used += task.suggestedPoints;
+    }
+  }
+  res.json({
+    capacity,
+    committedPoints: used,
+    confidence: Math.round((used / Math.max(capacity, 1)) * 100),
+    recommendedTasks: recommended.map((t) => ({
+      id: t.id,
+      title: t.title,
+      priority: t.priority,
+      suggestedPoints: t.suggestedPoints,
+      dependencies: backlog.filter((x) => x.id !== t.id && x.modules.some((m) => t.modules.includes(m))).slice(0, 2).map((x) => x.id),
+    })),
+    rationale: "Prioritized critical/high backlog items, module dependencies, and team capacity.",
+  });
+});
+
+app.post("/api/ai/sprint-risk", auth, (req, res) => {
+  res.json(sprintRisk(req.body.sprintId));
+});
+
+app.post("/api/ai/release-notes", auth, (req, res) => {
+  const completed = getTasks().filter((t) => t.status === "done");
+  res.json({
+    title: req.body.title || "TrackFlow Engineering Release",
+    summary: `${completed.length} completed items across product quality, platform reliability, and delivery workflows.`,
+    sections: {
+      features: completed.filter((t) => t.type === "feature").map((t) => t.title),
+      fixes: completed.filter((t) => t.type === "bug").map((t) => t.title),
+      improvements: completed.filter((t) => t.type === "task").map((t) => t.title),
+    },
+  });
+});
+
+app.post("/api/ai/meeting-summary", auth, (req, res) => {
+  const tasks = getTasks().filter((t) => t.status !== "done").slice(0, 8);
+  res.json({
+    summary: "The team is focused on closing active sprint work, reducing critical bugs, and keeping security/mobile initiatives moving.",
+    decisions: tasks.filter((t) => t.priority === "critical" || t.priority === "high").slice(0, 3).map((t) => `Prioritize ${t.id}: ${t.title}`),
+    actionItems: tasks.slice(0, 5).map((t) => ({ ownerTask: t.id, action: `Confirm next step and unblock ${t.title}` })),
+  });
+});
+
+app.post("/api/ai/search", auth, (req, res) => {
+  const query = String(req.body.query || "").toLowerCase();
+  const member = getMembers().find((m) => query.includes(m.name.toLowerCase()) || query.includes(m.name.split(" ")[0].toLowerCase()));
+  const module = Object.keys(moduleKeywords).find((name) => query.includes(name));
+  const type = ["bug", "feature", "task"].find((item) => query.includes(item));
+  const status = ["backlog", "todo", "in-progress", "review", "done"].find((item) => query.includes(item.replace("-", " "))) || null;
+  const results = getTasks().filter((task) => {
+    if (member && task.assigneeId !== member.id) return false;
+    if (type && task.type !== type) return false;
+    if (status && task.status !== status) return false;
+    if (module && !textOf(task).includes(module) && !detectModules(textOf(task)).includes(module)) return false;
+    return !query || similarity(query, textOf(task)) > 0 || Boolean(member || type || status || module);
+  });
+  res.json({ query, interpreted: { member: member?.name, module, type, status }, results });
+});
+
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 

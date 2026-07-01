@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Zap, Calendar, CheckCircle, Clock, Lock, Plus, X } from "lucide-react";
+import { Zap, Calendar, CheckCircle, Clock, Lock, Plus, X, AlertTriangle, Scale } from "lucide-react";
 import useAppStore from "../store/useAppStore";
+import { api } from "../lib/api";
+import AiActionPanel from "../components/AiActionPanel";
 
 const statusConfig = {
   active:    { label: "Active",    color: "#10b981", bg: "rgba(16,185,129,0.1)",  icon: Zap },
@@ -75,6 +77,9 @@ function AddSprintModal({ onClose, onAdd }) {
 export default function Sprints() {
   const { sprints, tasks, updateSprint, addSprint } = useAppStore();
   const [showAdd, setShowAdd] = useState(false);
+  const [risk, setRisk] = useState(null);
+  const [riskLoading, setRiskLoading] = useState(false);
+  const activeSprint = sprints.find((s) => s.status === "active") || sprints[0];
 
   return (
     <div className="flex flex-col gap-4">
@@ -89,6 +94,41 @@ export default function Sprints() {
           <Plus size={15} /> New Sprint
         </button>
       </div>
+
+      <AiActionPanel
+        title="Sprint Risk Prediction"
+        subtitle="Predict delivery confidence, blockers, overload, and workload redistribution."
+        action="Predict Risk"
+        loading={riskLoading}
+        onAction={async () => {
+          setRiskLoading(true);
+          try {
+            setRisk(await api.predictSprintRisk(activeSprint?.id));
+          } finally {
+            setRiskLoading(false);
+          }
+        }}
+      >
+        {risk ? (
+          <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_1fr] gap-4">
+            <div className="rounded-xl bg-gray-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Delivery confidence</p>
+              <p className={`text-4xl font-black mt-2 ${risk.confidence >= 70 ? "text-emerald-600" : "text-amber-600"}`}>{risk.confidence}%</p>
+              <p className="text-xs text-gray-500 mt-1">{risk.status} - health {risk.healthScore}/10</p>
+            </div>
+            <div className="rounded-xl border border-gray-100 p-4">
+              <div className="flex items-center gap-2 mb-3 text-sm font-bold text-gray-800"><AlertTriangle size={15} className="text-red-500" /> Blockers</div>
+              {risk.blockers.length === 0 ? <p className="text-xs text-gray-500">No critical blockers detected.</p> : risk.blockers.map((b) => <p key={b.id} className="text-xs text-gray-600 mb-2">{b.id}: {b.title}</p>)}
+            </div>
+            <div className="rounded-xl border border-gray-100 p-4">
+              <div className="flex items-center gap-2 mb-3 text-sm font-bold text-gray-800"><Scale size={15} className="text-indigo-500" /> Redistribution</div>
+              {(risk.redistribution.length ? risk.redistribution : ["Current workload distribution is acceptable."]).map((item) => <p key={item} className="text-xs text-gray-600 mb-2">{item}</p>)}
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">Run prediction before sprint review to catch delivery risk early.</p>
+        )}
+      </AiActionPanel>
 
       <div className="grid grid-cols-1 gap-4">
         {sprints.map((sprint) => {

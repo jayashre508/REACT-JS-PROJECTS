@@ -1,25 +1,7 @@
-# Dependencies
-node_modules/
-
-# Environment files
+node_modules
+dist
+build
 .env
-.env.*
-!.env.example
-
-# Build outputs
-dist/
-build/
-.next/
-
-# Logs
-*.log
-
-# IDE files
-.vscode/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Temporary folders
-.202628-30024-19rfsh5.h1nb/
+.env.local
+uploads/
+db.sqlite

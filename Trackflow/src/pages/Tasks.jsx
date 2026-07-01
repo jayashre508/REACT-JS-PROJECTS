@@ -29,7 +29,7 @@ const PAGE_SIZE = 10;
 export default function Tasks() {
   const {
     tasks, members, sprints, updateTask, deleteTask, openTaskModal,
-    searchQuery, setSearchQuery,
+    searchQuery, setSearchQuery, smartSearch,
     filterStatus, filterPriority, filterType,
     setFilterStatus, setFilterPriority, setFilterType, clearFilters,
   } = useAppStore();
@@ -51,9 +51,14 @@ export default function Tasks() {
   }, [sprints]);
 
   const q = (searchQuery || "").toLowerCase();
+  const smartIds = useMemo(() => {
+    if (!smartSearch || smartSearch.query !== searchQuery) return null;
+    return new Set(smartSearch.results.map((task) => task.id));
+  }, [smartSearch, searchQuery]);
   const filtered = useMemo(() => {
     return tasks
       .filter((t) => {
+        if (smartIds) return smartIds.has(t.id);
         const matchSearch =
           !q ||
           (t.title || "").toLowerCase().includes(q) ||
@@ -72,7 +77,7 @@ export default function Tasks() {
         if (typeof bv === "string") bv = bv.toLowerCase();
         return sortDir === "asc" ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
       });
-  }, [tasks, q, filterStatus, filterPriority, filterType, sortKey, sortDir]);
+  }, [tasks, q, smartIds, filterStatus, filterPriority, filterType, sortKey, sortDir]);
 
   const totalPages = useMemo(() => Math.ceil(filtered.length / PAGE_SIZE), [filtered.length]);
   const paginated = useMemo(
@@ -156,6 +161,18 @@ export default function Tasks() {
           )}
         </div>
       </div>
+
+      {smartSearch && smartSearch.query === searchQuery && (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl px-5 py-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold text-indigo-900">Smart search interpreted your query</p>
+            <p className="text-xs text-indigo-700 mt-1">
+              {Object.entries(smartSearch.interpreted).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join(" | ") || "Semantic keyword match"}
+            </p>
+          </div>
+          <span className="text-xs font-semibold text-indigo-700">{smartSearch.results.length} results</span>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

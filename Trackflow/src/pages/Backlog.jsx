@@ -1,5 +1,9 @@
-import { Inbox, Bug, Zap, CheckSquare, AlertCircle, ArrowUp, Minus, ArrowDown } from "lucide-react";
+import { useState } from "react";
+import { Inbox, Bug, Zap, CheckSquare, AlertCircle, ArrowUp, Minus, ArrowDown, Sparkles } from "lucide-react";
 import useAppStore from "../store/useAppStore";
+import { api } from "../lib/api";
+import AiActionPanel from "../components/AiActionPanel";
+import SkeletonBlock from "../components/SkeletonBlock";
 
 const priorityConfig = {
   critical: { label: "Critical", color: "#ef4444", bg: "#fff1f2", icon: AlertCircle },
@@ -13,6 +17,8 @@ const typeColor = { bug: "#ef4444", feature: "#8b5cf6", task: "#3b82f6" };
 
 export default function Backlog() {
   const { tasks, sprints, members, updateTask, openTaskModal, searchQuery } = useAppStore();
+  const [plan, setPlan] = useState(null);
+  const [planning, setPlanning] = useState(false);
   const q = searchQuery.toLowerCase();
   const backlog = tasks
     .filter((t) => t.status === "backlog" || !t.sprintId)
@@ -20,6 +26,58 @@ export default function Backlog() {
 
   return (
     <div className="flex flex-col gap-4">
+      <AiActionPanel
+        title="AI Sprint Planning"
+        subtitle="Generate a capacity-aware plan from backlog, suggested story points, and dependency signals."
+        action="Generate Plan"
+        loading={planning}
+        onAction={async () => {
+          setPlanning(true);
+          try {
+            setPlan(await api.generateSprintPlan());
+          } finally {
+            setPlanning(false);
+          }
+        }}
+      >
+        {planning && <SkeletonBlock lines={4} />}
+        {!planning && !plan && (
+          <div className="flex items-center gap-3 text-sm text-gray-500">
+            <Sparkles size={16} className="text-indigo-500" />
+            Plan the next sprint using priority, dependencies, and team capacity.
+          </div>
+        )}
+        {plan && (
+          <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5">
+            <div className="rounded-xl bg-gray-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Recommended capacity</p>
+              <p className="text-3xl font-black text-gray-900 mt-2">{plan.committedPoints}/{plan.capacity}</p>
+              <p className="text-xs text-gray-500 mt-1">{plan.confidence}% capacity utilization</p>
+              <p className="text-xs text-gray-500 mt-4">{plan.rationale}</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {plan.recommendedTasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{task.id} - {task.title}</p>
+                    <p className="text-xs text-gray-500">Suggested {task.suggestedPoints} pts {task.dependencies.length ? `- depends on ${task.dependencies.join(", ")}` : "- no obvious dependency"}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const target = sprints.find((s) => s.status === "planned") || sprints.find((s) => s.status === "active");
+                      if (target) updateTask(task.id, { sprintId: target.id, status: "todo", storyPoints: task.suggestedPoints });
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
+                  >
+                    Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </AiActionPanel>
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
           <Inbox size={18} className="text-gray-400" />

@@ -1,5 +1,9 @@
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { useState } from "react";
+import { FileText, MessageSquare } from "lucide-react";
 import useAppStore from "../store/useAppStore";
+import { api } from "../lib/api";
+import AiActionPanel from "../components/AiActionPanel";
 
 const burndown = [
   { day: "Day 1",  ideal: 42, actual: 42 },
@@ -53,6 +57,8 @@ function Card({ title, subtitle, children }) {
 
 export default function Reports() {
   const { tasks } = useAppStore();
+  const [generated, setGenerated] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const totalBugs     = tasks.filter((t) => t.type === "bug").length;
   const resolvedBugs  = tasks.filter((t) => t.type === "bug" && t.status === "done").length;
@@ -61,6 +67,32 @@ export default function Reports() {
 
   return (
     <div className="flex flex-col gap-4">
+      <AiActionPanel title="AI Release and Meeting Intelligence" subtitle="Convert completed work and active discussion context into executive communication." >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <button
+            onClick={async () => {
+              setLoading(true);
+              try { setGenerated(await api.generateReleaseNotes()); } finally { setLoading(false); }
+            }}
+            className="flex items-center gap-3 rounded-xl border border-gray-100 p-4 text-left hover:bg-gray-50 transition-all"
+          >
+            <FileText size={18} className="text-indigo-600" />
+            <div><p className="text-sm font-bold text-gray-900">Generate release notes</p><p className="text-xs text-gray-500">Customer-ready summary from done work.</p></div>
+          </button>
+          <button
+            onClick={async () => {
+              setLoading(true);
+              try { setGenerated(await api.summarizeMeeting()); } finally { setLoading(false); }
+            }}
+            className="flex items-center gap-3 rounded-xl border border-gray-100 p-4 text-left hover:bg-gray-50 transition-all"
+          >
+            <MessageSquare size={18} className="text-emerald-600" />
+            <div><p className="text-sm font-bold text-gray-900">Generate meeting summary</p><p className="text-xs text-gray-500">Decisions and action items from current work.</p></div>
+          </button>
+        </div>
+        {loading && <p className="text-xs text-gray-500 mt-4">Generating...</p>}
+        {generated && <pre className="mt-4 rounded-xl bg-gray-50 border border-gray-100 p-4 text-xs whitespace-pre-wrap text-gray-700 font-sans">{JSON.stringify(generated, null, 2)}</pre>}
+      </AiActionPanel>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

@@ -3,8 +3,10 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area,
 } from "recharts";
-import { CheckSquare, Clock, CheckCircle, AlertTriangle, TrendingUp, Activity, Zap } from "lucide-react";
+import { CheckSquare, Clock, CheckCircle, AlertTriangle, TrendingUp, Activity, Zap, Gauge, Scale, ShieldAlert } from "lucide-react";
 import useAppStore from "../store/useAppStore";
+import InsightCard from "../components/InsightCard";
+import SkeletonBlock from "../components/SkeletonBlock";
 
 const heatColors = ["rgba(99,102,241,0.08)","rgba(99,102,241,0.25)","rgba(99,102,241,0.5)","#4f46e5","#3730a3"];
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -118,7 +120,11 @@ function HeatCell({ cell, wi, di, color }) {
 }
 
 export default function Dashboard() {
-  const { tasks, members, sprints, notifications } = useAppStore();
+  const { tasks, members, sprints, notifications, aiInsights, fetchAiInsights, loading } = useAppStore();
+
+  useEffect(() => {
+    fetchAiInsights();
+  }, [fetchAiInsights]);
 
   // ── KPI values from real tasks ──
   const total      = tasks.length;
@@ -216,6 +222,46 @@ export default function Dashboard() {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20, maxWidth:1600, margin:"0 auto" }}>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 overflow-hidden relative">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold mb-3">
+              <Zap size={13} /> AI Engineering Command Center
+            </div>
+            <h1 className="text-2xl font-black text-gray-900">Delivery intelligence for software teams</h1>
+            <p className="text-sm text-gray-500 mt-2 max-w-2xl">
+              TrackFlow predicts sprint risk, balances workload, detects quality trends, and turns delivery data into executive-ready decisions.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-3 min-w-[280px]">
+            <div className="text-center rounded-xl bg-gray-50 p-3">
+              <p className="text-2xl font-black text-gray-900">{aiInsights?.bugTrend?.criticalOpen ?? 0}</p>
+              <p className="text-[11px] text-gray-500">critical risks</p>
+            </div>
+            <div className="text-center rounded-xl bg-gray-50 p-3">
+              <p className="text-2xl font-black text-gray-900">{aiInsights?.risk?.blockers?.length ?? 0}</p>
+              <p className="text-[11px] text-gray-500">blockers</p>
+            </div>
+            <div className="text-center rounded-xl bg-gray-50 p-3">
+              <p className="text-2xl font-black text-gray-900">{aiInsights?.velocityPrediction ?? 0}</p>
+              <p className="text-[11px] text-gray-500">pts forecast</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {loading.ai && !aiInsights ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }, (_, i) => <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5"><SkeletonBlock /></div>)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <InsightCard label="Sprint Health Score" value={`${aiInsights?.sprintHealthScore ?? 0}/10`} detail={aiInsights?.risk?.status || "No active sprint"} tone={(aiInsights?.sprintHealthScore ?? 0) >= 7 ? "green" : "amber"} icon={Gauge} />
+          <InsightCard label="Delivery Confidence" value={`${aiInsights?.deliveryConfidence ?? 0}%`} detail="Probability of hitting committed sprint goals." tone={(aiInsights?.deliveryConfidence ?? 0) >= 70 ? "green" : "red"} icon={TrendingUp} />
+          <InsightCard label="Workload Balance" value={`${aiInsights?.workloadBalance ?? 0}%`} detail="Lower scores indicate overloaded engineers." tone="violet" icon={Scale} />
+          <InsightCard label="Critical Indicators" value={aiInsights?.criticalRisks?.length ?? 0} detail={(aiInsights?.criticalRisks || ["No critical risk indicators"]).slice(0, 1).join("")} tone="red" icon={ShieldAlert} />
+        </div>
+      )}
 
       {/* Row 1 — KPI */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:16 }}>

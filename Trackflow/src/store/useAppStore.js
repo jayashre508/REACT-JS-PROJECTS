@@ -33,10 +33,12 @@ const useAppStore = create((set) => {
     sprints:       [],
     goals:         [],
     notifications: [],
+    aiInsights:    null,
+    smartSearch:   null,
 
   // loading & error per resource
-  loading: { tasks: false, sprints: false, goals: false, members: false },
-  error:   { tasks: null,  sprints: null,  goals: null,  members: null  },
+  loading: { tasks: false, sprints: false, goals: false, members: false, ai: false },
+  error:   { tasks: null,  sprints: null,  goals: null,  members: null, ai: null  },
 
   taskModalOpen:  false,
   editingTask:    null,
@@ -84,6 +86,22 @@ const useAppStore = create((set) => {
     notifications,
   });
 },
+
+  fetchAiInsights: async () => {
+    set((s) => ({ loading: { ...s.loading, ai: true }, error: { ...s.error, ai: null } }));
+    try {
+      const aiInsights = await api.getAiInsights();
+      set((s) => ({ aiInsights, loading: { ...s.loading, ai: false } }));
+    } catch (err) {
+      set((s) => ({ error: { ...s.error, ai: err.message }, loading: { ...s.loading, ai: false } }));
+    }
+  },
+
+  runSmartSearch: async (query) => {
+    const smartSearch = await api.smartSearch(query);
+    set({ smartSearch, searchQuery: query });
+    return smartSearch;
+  },
 
 
 

@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { LayoutDashboard, Kanban, List, GitBranch, Archive, Users, Settings, Target, Zap, BarChart2, Info, BookOpen, X, Search } from "lucide-react";
+import { LayoutDashboard, Kanban, List, GitBranch, Archive, Users, Settings, Target, Zap, BarChart2, Info, X, Search } from "lucide-react";
 import Logo from "./Logo";
 import useAuthStore from "../store/useAuthStore";
 import useAppStore from "../store/useAppStore";
@@ -24,7 +24,6 @@ const bottomItems = [
   { label: "Team",     path: "/team",     icon: Users },
   { label: "Settings", path: "/settings", icon: Settings },
   { label: "About",    path: "/about",    icon: Info },
-  { label: "Manual",   path: "/manual",   icon: BookOpen },
 ];
 
 export default function Sidebar({ onClose }) {

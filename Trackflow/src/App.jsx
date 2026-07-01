@@ -2,6 +2,7 @@ import React, { Suspense, useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import TaskModal from "./components/TaskModal";
+import CommandPalette from "./components/CommandPalette";
 import { Routes, Route, Navigate } from "react-router-dom";
 import useAuthStore from "./store/useAuthStore";
 import useAppStore from "./store/useAppStore";
@@ -19,9 +20,6 @@ const Backlog   = React.lazy(() => import("./pages/Backlog"));
 const Timeline  = React.lazy(() => import("./pages/Timeline"));
 const Settings  = React.lazy(() => import("./pages/Settings"));
 const About     = React.lazy(() => import("./pages/About"));
-const Manual    = React.lazy(() => import("./pages/Manual"));
-
-
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
@@ -100,13 +98,13 @@ function AppShell() {
               <Route path="/team"      element={<Team />} />
               <Route path="/settings"  element={<Settings />} />
               <Route path="/about"     element={<About />} />
-              <Route path="/manual"    element={<Manual />} />
             </Routes>
           </Suspense>
         </main>
       </div>
 
       <TaskModal />
+      <CommandPalette />
     </div>
   );
 }

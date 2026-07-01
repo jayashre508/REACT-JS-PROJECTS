@@ -43,7 +43,7 @@ export default function Header({ onMenuClick }) {
   const page     = breadcrumbMap[location.pathname] || "TrackFlow";
   const subtitle = pageSubtitles[location.pathname] || "";
 
-  const { openTaskModal, toggleNotifPanel, notifications, tasks, setSearchQuery } = useAppStore();
+  const { openTaskModal, toggleNotifPanel, notifications, tasks, setSearchQuery, runSmartSearch } = useAppStore();
   const { currentUser, logout } = useAuthStore();
   const { dark, toggleDark } = useThemeStore();
 
@@ -93,9 +93,11 @@ export default function Header({ onMenuClick }) {
     navigate("/list");
   };
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = async (e) => {
     if (e.key === "Enter" && localQuery.trim()) {
-      setSearchQuery(localQuery.trim());
+      const query = localQuery.trim();
+      if (query.split(" ").length > 3) await runSmartSearch(query);
+      else setSearchQuery(query);
       setLocalQuery("");
       setSearchFocused(false);
       navigate("/list");
@@ -146,7 +148,7 @@ export default function Header({ onMenuClick }) {
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
               onKeyDown={handleSearchSubmit}
-              placeholder="Search tasks…"
+              placeholder="Search tasks or ask AI..."
               className="bg-transparent border-0 outline-0 text-xs flex-1 text-primary min-w-0"
             />
             {localQuery ? (

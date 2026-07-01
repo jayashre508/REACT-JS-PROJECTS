@@ -43,4 +43,14 @@ export const api = {
   getMembers:   ()                => request("GET",    "/members"), 
   getNotifications: ()            => request("GET",    "/notifications"),
 
+  getAiInsights:      ()              => request("GET",  "/ai/insights"),
+  generateSprintPlan: (payload = {})  => request("POST", "/ai/sprint-plan", payload),
+  predictSprintRisk:  (sprintId)      => request("POST", "/ai/sprint-risk", { sprintId }),
+  analyzeBug:         (payload)       => request("POST", "/ai/bug-assistant", payload),
+  findDuplicates:     (payload)       => request("POST", "/ai/duplicates", payload),
+  breakdownTask:      (payload)       => request("POST", "/ai/task-breakdown", payload),
+  generateReleaseNotes:(payload = {}) => request("POST", "/ai/release-notes", payload),
+  summarizeMeeting:   (payload = {})  => request("POST", "/ai/meeting-summary", payload),
+  smartSearch:        (query)         => request("POST", "/ai/search", { query }),
+
 };

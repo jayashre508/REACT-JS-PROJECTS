@@ -1,0 +1,328 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap");
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #030014;
+
+  --color-light-100: #cecefb;
+  --color-light-200: #a8b5db;
+
+  --color-gray-100: #9ca4ab;
+
+  --color-dark-100: #0f0d23;
+
+  --font-dm-sans: DM Sans, sans-serif;
+
+  --breakpoint-xs: 480px;
+
+  --background-image-hero-pattern: url("/hero-bg.png");
+}
+
+@layer base {
+  body {
+    font-family: "DM Sans", serif;
+    font-optical-sizing: auto;
+    background: #030014;
+  }
+
+  h1 {
+    @apply mx-auto max-w-4xl text-center text-5xl font-bold leading-tight tracking-[-1%] text-white sm:text-[64px] sm:leading-[76px];
+  }
+
+  h2 {
+    @apply text-2xl font-bold text-white sm:text-3xl;
+  }
+
+  main {
+    @apply min-h-screen relative bg-primary;
+  }
+
+  header {
+    @apply sm:mt-10 mt-5;
+  }
+
+  header img {
+    @apply w-full max-w-lg h-auto object-contain mx-auto drop-shadow-md;
+  }
+}
+
+@layer components {
+  .pattern {
+    @apply bg-hero-pattern w-full h-screen bg-center bg-cover absolute z-0;
+  }
+
+  .wrapper {
+    @apply px-5 py-12 xs:p-10 max-w-7xl mx-auto flex flex-col relative z-10;
+  }
+
+  .trending {
+    @apply mt-20;
+
+    & ul {
+      @apply flex flex-row overflow-y-auto gap-5 -mt-10 w-full hide-scrollbar;
+    }
+
+    & ul li {
+      @apply min-w-[230px] flex flex-row items-center;
+    }
+
+    & ul li p {
+      @apply fancy-text mt-[22px] text-nowrap;
+    }
+
+    & ul li img {
+      @apply w-[127px] h-[163px] rounded-lg object-cover -ml-3.5;
+    }
+  }
+
+  .search {
+    @apply w-full bg-light-100/5 px-4 py-3 rounded-lg mt-10 max-w-3xl mx-auto;
+
+    & div {
+      @apply relative flex items-center;
+    }
+
+    & img {
+      @apply absolute left-2 h-5 w-5;
+    }
+
+    & input {
+      @apply w-full bg-transparent py-2 sm:pr-10 pl-10 text-base text-gray-200 placeholder-light-200 outline-hidden;
+    }
+  }
+
+  .all-movies {
+    @apply space-y-9;
+
+    & ul {
+      @apply grid grid-cols-1 gap-5 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4;
+    }
+  }
+
+  .movie-card {
+    @apply bg-dark-100 p-5 rounded-2xl shadow-inner shadow-light-100/10;
+
+    & img {
+      @apply rounded-lg h-auto w-full;
+    }
+
+    & h3 {
+      @apply text-white font-bold text-base line-clamp-1;
+    }
+
+    & .content {
+      @apply mt-2 flex flex-row items-center flex-wrap gap-2;
+    }
+
+    & .rating {
+      @apply flex flex-row items-center gap-1;
+    }
+
+    & .rating img {
+      @apply size-4 object-contain;
+    }
+
+    & .rating p {
+      @apply font-bold text-base text-white;
+    }
+
+    & .content span {
+      @apply text-sm text-gray-100;
+    }
+
+    & .content .lang {
+      @apply capitalize text-gray-100 font-medium text-base;
+    }
+
+    & .content .year {
+      @apply text-gray-100 font-medium text-base;
+    }
+  }
+}
+
+@utility text-gradient {
+  @apply bg-linear-to-r from-[#D6C7FF] to-[#AB8BFF] bg-clip-text text-transparent;
+}
+
+@utility fancy-text {
+  -webkit-text-stroke: 5px rgba(206, 206, 251, 0.5);
+  font-size: 190px;
+  font-family: "Bebas Neue", sans-serif;
+}
+
+@utility hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────── */
+@layer components {
+  .toolbar {
+    @apply flex flex-wrap items-center gap-2 mt-8 mb-2;
+  }
+
+  .toolbar-btn {
+    @apply flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-light-200 bg-white/5 hover:bg-white/10 transition-colors border border-white/10 cursor-pointer relative;
+  }
+
+  .toolbar-btn-active {
+    @apply bg-purple-500/20 border-purple-500/40 text-purple-300;
+  }
+
+  .toolbar-btn-compare {
+    @apply bg-yellow-500/20 border-yellow-500/40 text-yellow-300;
+  }
+
+  .filter-dot {
+    @apply absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full;
+  }
+
+  /* ── Mood Picker ── */
+  .mood-picker {
+    @apply mt-6;
+  }
+
+  .mood-btn {
+    @apply px-3 py-1.5 rounded-full text-sm bg-white/5 border border-white/10 text-light-200 hover:bg-white/10 transition-colors cursor-pointer;
+  }
+
+  .mood-btn-active {
+    @apply bg-purple-500/30 border-purple-400/50 text-purple-200;
+  }
+
+  /* ── Filters Panel ── */
+  .filters-panel {
+    @apply mt-4 p-4 rounded-xl bg-dark-100 border border-white/10;
+  }
+
+  .filter-chip {
+    @apply px-2.5 py-1 rounded-full text-xs bg-white/5 border border-white/10 text-light-200 hover:bg-white/10 transition-colors cursor-pointer;
+  }
+
+  .filter-chip-active {
+    @apply bg-purple-500/30 border-purple-400/50 text-purple-200;
+  }
+
+  .filter-label {
+    @apply flex flex-col gap-1 text-xs text-gray-400;
+  }
+
+  .filter-input {
+    @apply bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm outline-none focus:border-purple-500/50;
+  }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4;
+  }
+
+  .modal-content {
+    @apply relative bg-dark-100 border border-white/10 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl;
+  }
+
+  .modal-close {
+    @apply absolute top-4 right-4 text-gray-400 hover:text-white text-xl leading-none cursor-pointer;
+  }
+
+  /* ── Action Buttons ── */
+  .action-btn {
+    @apply px-3 py-1.5 rounded-lg text-sm bg-white/5 border border-white/10 text-light-200 hover:bg-white/10 transition-colors cursor-pointer;
+  }
+
+  .action-btn-active {
+    @apply bg-purple-500/30 border-purple-400/50 text-purple-200;
+  }
+
+  .action-btn-fav {
+    @apply bg-red-500/20 border-red-400/40 text-red-300;
+  }
+
+  /* ── Card Action Buttons ── */
+  .card-action-btn {
+    @apply w-9 h-9 rounded-full bg-black/60 border border-white/20 text-white hover:bg-purple-500/60 transition-colors flex items-center justify-center text-base cursor-pointer;
+  }
+
+  /* ── Panels (Watchlist / Compare) ── */
+  .panel-overlay {
+    @apply fixed inset-0 z-50 flex items-start justify-end bg-black/50 backdrop-blur-sm;
+  }
+
+  .panel-content {
+    @apply bg-dark-100 border-l border-white/10 w-full max-w-sm h-full p-6 overflow-y-auto shadow-2xl;
+  }
+
+  .compare-content {
+    @apply bg-dark-100 border border-white/10 rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl m-auto;
+  }
+
+  .compare-card {
+    @apply relative bg-white/5 rounded-xl p-4 border border-white/10;
+  }
+
+  /* ── Tabs ── */
+  .tab-btn {
+    @apply flex-1 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white transition-colors cursor-pointer;
+  }
+
+  .tab-btn-active {
+    @apply bg-purple-500/20 text-purple-300;
+  }
+
+  /* ── Empty State ── */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+
+  /* ── Recent Search Dropdown ── */
+  .recent-dropdown {
+    @apply absolute top-full left-0 right-0 mt-1 bg-dark-100 border border-white/10 rounded-xl p-3 z-20 shadow-xl;
+  }
+
+  .recent-item {
+    @apply w-full text-left px-2 py-1.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer block;
+  }
+
+  /* ── Command Palette ── */
+  .command-palette {
+    @apply bg-dark-100 border border-white/10 rounded-2xl p-4 w-full max-w-md shadow-2xl;
+  }
+
+  .command-input {
+    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-purple-500/50 text-sm;
+  }
+
+  .command-item {
+    @apply w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors cursor-pointer;
+  }
+
+  .command-kbd {
+    @apply px-2 py-0.5 rounded bg-white/10 text-gray-400 text-xs font-mono;
+  }
+
+  /* ── Insights ── */
+  .insights-section {
+    @apply mt-16 space-y-6;
+  }
+
+  .insights-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4;
+  }
+
+  .insight-card {
+    @apply bg-dark-100 border border-white/10 rounded-2xl p-5;
+  }
+
+  .insight-title {
+    @apply text-light-200 text-sm font-semibold uppercase tracking-wider;
+  }
+
+  .stat-chip {
+    @apply flex flex-col items-center justify-center bg-white/5 rounded-xl p-3 gap-0.5;
+  }
+}
